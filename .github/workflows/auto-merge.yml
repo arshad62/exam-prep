@@ -6,10 +6,13 @@ name: auto-merge
 #
 # A PR containing a non-Markdown file fails that check, so it stays open and
 # unmerged. This workflow never bypasses a check — it only arms auto-merge.
+#
+# GitHub's auto-merge does not reliably honour `--delete-branch`, so the head
+# branch is deleted explicitly after a successful merge.
 
 on:
   pull_request:
-    types: [opened, reopened, synchronize, ready_for_review]
+    types: [opened, reopened, synchronize, ready_for_review, closed]
 
 permissions:
   contents: write
@@ -22,9 +25,10 @@ concurrency:
 jobs:
   arm:
     name: arm-auto-merge
-    # Skip drafts, and skip PRs from forks: their token is read-only and the
-    # branch is not ours to merge.
+    # Skip drafts, closed PRs, and PRs from forks: their token is read-only and
+    # the branch is not ours to merge.
     if: >-
+      github.event.action != 'closed' &&
       github.event.pull_request.draft == false &&
       github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
@@ -35,6 +39,26 @@ jobs:
           PR: ${{ github.event.pull_request.number }}
         run: |
           set -euo pipefail
-          if ! gh pr merge "$PR" --repo "$GITHUB_REPOSITORY" --squash --auto --delete-branch; then
+          if ! gh pr merge "$PR" --repo "$GITHUB_REPOSITORY" --squash --auto; then
             echo "::warning::Could not arm auto-merge for PR #$PR (already merged, conflicted, or checks failing)."
+          fi
+
+  cleanup:
+    name: delete-merged-branch
+    if: >-
+      github.event.action == 'closed' &&
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete head branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -euo pipefail
+          if gh api --method DELETE "repos/$GITHUB_REPOSITORY/git/refs/heads/$BRANCH"; then
+            echo "Deleted branch $BRANCH"
+          else
+            echo "::warning::Could not delete $BRANCH (already gone or protected)."
           fi

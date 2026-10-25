@@ -35,6 +35,6 @@ jobs:
           PR: ${{ github.event.pull_request.number }}
         run: |
           set -euo pipefail
-          if ! gh pr merge "$PR" --repo "$GITHUB_REPOSITORY" --squash --auto; then
+          if ! gh pr merge "$PR" --repo "$GITHUB_REPOSITORY" --squash --auto --delete-branch; then
             echo "::warning::Could not arm auto-merge for PR #$PR (already merged, conflicted, or checks failing)."
           fi

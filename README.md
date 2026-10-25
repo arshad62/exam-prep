@@ -1,6 +1,6 @@
 # Exam Prep
 
-A private workspace for exam preparation: notes, summaries, and practice material,
+An open workspace for exam preparation: notes, summaries, and practice material,
 kept in Markdown so everything stays diff-friendly and searchable.
 
 ## Status
@@ -47,4 +47,4 @@ navigable on GitHub without any tooling.
 
 ---
 
-Private repository. Not for distribution.
+Public repository. Shared for reference; corrections and suggestions are welcome.

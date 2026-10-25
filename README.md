@@ -43,8 +43,11 @@ gh pr create --fill                 # robot arms auto-merge on open
 The `auto-merge` workflow queues the PR for squash merge. GitHub then merges it
 itself, but only after the required `markdown-only` check passes. If the branch
 contains a file that is not Markdown (or an allowlisted exception), that check
-fails and the PR stays open — no bad file can reach `main`. Merged branches are
-deleted automatically.
+fails and the PR stays open — no bad file can reach `main`.
+
+Merged branches are deleted too: immediately for manual merges, and by an hourly
+sweep for robot merges, because GitHub suppresses `closed` events for PRs that
+auto-merge merges.
 
 To review a PR without merging, open it as a **draft**; the robot skips drafts.
 

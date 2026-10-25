@@ -1,0 +1,35 @@
+# ---------------------------------------------------------------------------
+# exam-prep is Markdown-only.
+#
+# Strategy: ignore everything, then re-allow the few things that belong here.
+# The `!*/` line is required so Git still walks into directories — without it
+# no later negation could ever match a file inside a subdirectory.
+#
+# This file is a convenience, not the enforcement. The authoritative check is
+# .github/workflows/markdown-only.yml, and .githooks/pre-commit catches
+# mistakes before they are committed.
+# ---------------------------------------------------------------------------
+
+*
+
+# Directories must stay walkable.
+!*/
+
+# Content: Markdown anywhere, images only under assets/.
+!*.md
+!assets/**/*.png
+!assets/**/*.jpg
+!assets/**/*.jpeg
+!assets/**/*.gif
+!assets/**/*.svg
+!assets/**/*.webp
+
+# The enforcement machinery itself.
+!.gitignore
+!.gitattributes
+!.github/
+!.github/**
+!.githooks/
+!.githooks/**
+!.opencode/
+!.opencode/**

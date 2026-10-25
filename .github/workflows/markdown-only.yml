@@ -1,0 +1,36 @@
+name: markdown-only
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: markdown-only
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Reject non-Markdown files
+        run: |
+          set -euo pipefail
+          fail=0
+          while IFS= read -r -d '' file; do
+            case "$file" in
+              *.md | .gitignore | .gitattributes) continue ;;
+              .github/* | .githooks/* | .opencode/*) continue ;;
+              assets/*)
+                case "$file" in
+                  *.png | *.jpg | *.jpeg | *.gif | *.svg | *.webp) continue ;;
+                esac
+                ;;
+            esac
+            echo "::error file=$file::Only Markdown (plus allowlisted assets and config) may be committed"
+            fail=1
+          done < <(git ls-files -z)
+          exit "$fail"

@@ -1,0 +1,7 @@
+# Normalize line endings so diffs stay readable across Windows (WSL) and CI.
+* text=auto eol=lf
+
+*.md text eol=lf
+
+# Images are binary; never attempt to diff or merge them as text.
+assets/** binary

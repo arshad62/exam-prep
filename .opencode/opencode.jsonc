@@ -1,0 +1,16 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  // exam-prep is Markdown-only. Block write/edit/patch from creating anything
+  // else. `*` also matches `/`, so `*.md` covers nested paths.
+  //
+  // The shell tool can still write files, so this is a guardrail, not a gate:
+  // .githooks/pre-commit and the CI check are the real enforcement.
+  "permissions": [
+    { "action": "edit", "resource": "*", "effect": "deny" },
+    { "action": "edit", "resource": "*.md", "effect": "allow" },
+    { "action": "edit", "resource": "assets/*", "effect": "allow" },
+    { "action": "edit", "resource": ".github/*", "effect": "allow" },
+    { "action": "edit", "resource": ".githooks/*", "effect": "allow" },
+    { "action": "edit", "resource": ".opencode/*", "effect": "allow" }
+  ]
+}

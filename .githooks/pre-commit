@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# Reject commits that would add anything outside the Markdown-only allowlist.
+# Keep this in sync with .github/workflows/markdown-only.yml.
+set -euo pipefail
+
+allowed() {
+  case "$1" in
+    *.md | .gitignore | .gitattributes) return 0 ;;
+    .github/* | .githooks/* | .opencode/*) return 0 ;;
+    assets/*)
+      case "$1" in
+        *.png | *.jpg | *.jpeg | *.gif | *.svg | *.webp) return 0 ;;
+      esac
+      ;;
+  esac
+  return 1
+}
+
+status=0
+while IFS= read -r -d '' file; do
+  if ! allowed "$file"; then
+    printf 'pre-commit: not allowed in a Markdown-only repo: %s\n' "$file" >&2
+    status=1
+  fi
+done < <(git diff --cached --name-only --diff-filter=ACMR -z)
+
+if ((status != 0)); then
+  cat >&2 <<'EOF'
+
+Allowed here:
+  *.md
+  .gitignore, .gitattributes
+  .github/**, .githooks/**, .opencode/**
+  assets/**/*.{png,jpg,jpeg,gif,svg,webp}
+
+Put code samples in fenced blocks inside a .md file instead of a separate file.
+Bypass once with: git commit --no-verify
+EOF
+  exit 1
+fi

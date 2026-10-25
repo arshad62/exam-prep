@@ -5,7 +5,27 @@ kept in Markdown so everything stays diff-friendly and searchable.
 
 ## Status
 
-Early days — only this README exists. Content is added as subjects are tackled.
+Scaffolding only — no study content yet. The repo has this README, `AGENTS.md`,
+`assets/` for diagrams, and the guardrails that keep it Markdown-only.
+
+### Markdown-only rule
+
+Everything tracked here is `.md`, except `.gitignore`, `.gitattributes`, the
+`.github/`/`.githooks/`/`.opencode/` config, and images under `assets/`.
+
+| Layer | Where | Purpose |
+| --- | --- | --- |
+| Ignore allowlist | `.gitignore` | Non-Markdown files never show up in `git status` |
+| Pre-commit hook | `.githooks/pre-commit` | Rejects the commit locally |
+| CI check | `.github/workflows/markdown-only.yml` | Fails the build on any non-allowlisted file |
+| Ruleset | branch `main` | Requires the CI check; direct pushes are blocked |
+| Agent rules | `.opencode/opencode.jsonc`, `AGENTS.md` | Stops the agent creating other file types |
+
+Enable the hook once per clone:
+
+```sh
+git config core.hooksPath .githooks
+```
 
 ## Planned structure
 

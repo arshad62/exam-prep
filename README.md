@@ -48,6 +48,16 @@ deleted automatically.
 
 To review a PR without merging, open it as a **draft**; the robot skips drafts.
 
+**One exception:** a PR that changes `.github/workflows/**` cannot be merged by
+the robot. GitHub forbids `GITHUB_TOKEN` from merging workflow changes (it can
+never hold the `workflows` permission), so merge those yourself:
+
+```sh
+gh pr merge <number> --squash --delete-branch
+```
+
+The branch cleanup still runs either way.
+
 ## Planned structure
 
 ```text

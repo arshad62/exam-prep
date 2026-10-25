@@ -19,6 +19,7 @@ Everything tracked here is `.md`, except `.gitignore`, `.gitattributes`, the
 | Pre-commit hook | `.githooks/pre-commit` | Rejects the commit locally |
 | CI check | `.github/workflows/markdown-only.yml` | Fails the build on any non-allowlisted file |
 | Ruleset | branch `main` | Requires the CI check; direct pushes are blocked |
+| Auto-merge robot | `.github/workflows/auto-merge.yml` | Arms auto-merge; GitHub merges only when the check is green |
 | Agent rules | `.opencode/opencode.jsonc`, `AGENTS.md` | Stops the agent creating other file types |
 
 Enable the hook once per clone:
@@ -26,6 +27,26 @@ Enable the hook once per clone:
 ```sh
 git config core.hooksPath .githooks
 ```
+
+### Branch flow
+
+`main` is locked. Nothing is pushed to it directly — GitHub rejects the push.
+Every change goes through a side branch and a pull request:
+
+```sh
+git switch -c notes/graphs          # one branch per change
+git commit -am "graphs: add traversal notes"
+git push -u origin notes/graphs
+gh pr create --fill                 # robot arms auto-merge on open
+```
+
+The `auto-merge` workflow queues the PR for squash merge. GitHub then merges it
+itself, but only after the required `markdown-only` check passes. If the branch
+contains a file that is not Markdown (or an allowlisted exception), that check
+fails and the PR stays open — no bad file can reach `main`. Merged branches are
+deleted automatically.
+
+To review a PR without merging, open it as a **draft**; the robot skips drafts.
 
 ## Planned structure
 

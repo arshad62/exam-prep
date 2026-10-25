@@ -1,0 +1,40 @@
+name: auto-merge
+
+# The "robot": queues a PR for merge as soon as it is opened or updated.
+# GitHub itself performs the merge, and only after every required check passes
+# (currently `markdown-only`, from .github/workflows/markdown-only.yml).
+#
+# A PR containing a non-Markdown file fails that check, so it stays open and
+# unmerged. This workflow never bypasses a check — it only arms auto-merge.
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: auto-merge-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  arm:
+    name: arm-auto-merge
+    # Skip drafts, and skip PRs from forks: their token is read-only and the
+    # branch is not ours to merge.
+    if: >-
+      github.event.pull_request.draft == false &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enable auto-merge (squash)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          if ! gh pr merge "$PR" --repo "$GITHUB_REPOSITORY" --squash --auto; then
+            echo "::warning::Could not arm auto-merge for PR #$PR (already merged, conflicted, or checks failing)."
+          fi

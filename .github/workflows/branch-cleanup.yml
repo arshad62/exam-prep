@@ -1,25 +1,31 @@
 name: branch-cleanup
 
-# GitHub's auto-merge does not reliably honour `delete_branch_on_merge`, and a
-# `pull_request: closed` trigger does not fire for auto-merged PRs. So cleanup
-# runs on `pull_request_target: closed`, which uses the base-branch workflow and
-# a write-capable token.
+# Deletes head branches of merged or closed pull requests.
 #
-# This workflow never checks out or runs PR code, so `pull_request_target` is
-# safe here.
+# Why three triggers: GitHub's auto-merge does not honour
+# `delete_branch_on_merge`, and it suppresses `closed` events for the PRs it
+# merges, so a `pull_request`/`pull_request_target: closed` trigger alone leaves
+# branches behind. The schedule is the reliable path; the closed trigger just
+# makes manual merges tidy up immediately.
+#
+# `pull_request_target` never checks out PR code, so it is safe here.
 
 on:
   pull_request_target:
     types: [closed]
+  schedule:
+    - cron: "17 * * * *" # hourly, off the hour to avoid the busy window
+  workflow_dispatch:
 
 permissions:
   contents: write
   pull-requests: read
 
 jobs:
-  delete-branch:
-    name: delete-merged-branch
+  on-close:
+    name: delete-branch-on-close
     if: >-
+      github.event_name == 'pull_request_target' &&
       github.event.pull_request.merged == true &&
       github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
@@ -35,3 +41,37 @@ jobs:
           else
             echo "::warning::Could not delete $BRANCH (already gone or protected)."
           fi
+
+  sweep:
+    name: sweep-stale-branches
+    if: github.event_name != 'pull_request_target'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete branches whose PR is merged or closed
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          default=$(gh api "repos/$GITHUB_REPOSITORY" --jq .default_branch)
+          echo "Default branch: $default"
+
+          gh api --paginate "repos/$GITHUB_REPOSITORY/branches?per_page=100" --jq '.[].name' |
+            while IFS= read -r branch; do
+              [ "$branch" = "$default" ] && continue
+
+              state=$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$branch" \
+                --state all --limit 1 --json state --jq '.[0].state // "NONE"')
+
+              case "$state" in
+                MERGED | CLOSED)
+                  if gh api --method DELETE "repos/$GITHUB_REPOSITORY/git/refs/heads/$branch"; then
+                    echo "Deleted $branch (PR $state)"
+                  else
+                    echo "::warning::Failed to delete $branch"
+                  fi
+                  ;;
+                *)
+                  echo "Keeping $branch (PR $state)"
+                  ;;
+              esac
+            done
